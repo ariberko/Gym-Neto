@@ -1,8 +1,9 @@
 name: CI
 
+# Manual only (Actions tab -> CI -> Run workflow).
+# macOS runners use private-repo minutes at 10x; switch back to push/pull_request once the repo is public.
 on:
-  push:
-  pull_request:
+  workflow_dispatch:
 
 jobs:
   core-tests:
