@@ -7,7 +7,7 @@ Gym Neto is an Apple Watch + iPhone app. You press start when you start training
 | | State | What it means |
 |---|---|---|
 | 🟢 | **Work** | You are really training: reps, intervals, running |
-| 🔵 | **Rest** | Healthy rest: a rest timer, or a break shorter than your rest limit |
+| 🔵 | **Rest** | Healthy rest - only if your rest mode allows it (see below) |
 | 🔴 | **Garbage** | Rest that ran too long, scrolling your phone, walking around |
 
 You see it live on the watch and phone and get a full report at the end: net time, score (A+ to F), timeline, heart rate chart, where the garbage time went and coaching tips.
@@ -23,18 +23,36 @@ Every second the app fuses these signals into one **effort score** (0-100):
 - **Active energy burn rate** - kcal/min from HealthKit
 - **Step cadence** - pedometer, for running / cardio and for spotting "wandering"
 
-Each workout type (Strength, Functional, HIIT, Cardio, Running) weighs the signals differently. Hysteresis stops a single spike or a 3-second pause mid-set from flipping the state.
+Each workout type (Strength, Functional, HIIT, Cardio, Running, Cycling, Rowing, Boxing) weighs the signals differently. Hysteresis stops a single spike or a 3-second pause mid-set from flipping the state.
+
+### Rest modes (you pick)
+
+| Mode | How breaks count |
+|---|---|
+| **All rest is garbage** (default) | Only real work counts. Every break is garbage |
+| **Short rest is OK** | Breaks under your rest limit are rest, longer ones are garbage |
+| **Rest only with timer** | Rest counts only while the Rest timer runs |
+
+The **Rest** button always starts a timer and the watch taps you when it ends.
 
 ### Garbage detectives
 
 Garbage time is tagged with a reason:
 
-- ⏳ **Long rests** - break went past your rest limit (default 90 s)
+- ⏳ **Resting** - a break that counts as garbage in your rest mode
 - ⏱️ **Rest timer overrun** - you tapped Rest and did not start again when it ended
 - 📱 **Screen time** - wrist raised + still with screen facing up (watch), or on iPhone: you left the app while the phone was unlocked
 - 🚶 **Wandering** - slow walking with no effort (chatting, looking for a free machine)
 
 The watch taps your wrist after 30 s of garbage time and every minute after that.
+
+### Watch face widget
+
+Add **Net Time** to any watch face (corner, circular, rectangular, inline). During a workout it shows your state and net time, counting live while you work. After, it shows today's net time and your last grade.
+
+### iPhone Live Activity
+
+Lock screen + Dynamic Island show net time (counting live while you work), state, heart rate, the rest timer and garbage time. It starts when the iPhone app is open (an iOS rule) - if you start on the watch with the phone app closed, it appears next time you open Gym Neto.
 
 ### iPhone only (no watch)
 
@@ -50,8 +68,10 @@ GymNetoKit/        Swift package - the net-time engine (pure Swift, unit tested)
   EffortModel      sensor fusion -> effort score
   Insights         coaching tips for the summary
 Shared/            Code used by both apps (motion sampler, Health baselines, theme)
-GymNetoWatch/      watchOS app - HKWorkoutSession + live builder, haptics, live UI
-GymNeto/           iOS app - start on watch, live mirror, iPhone-only mode, history, charts, settings
+GymNetoWatch/        watchOS app - HKWorkoutSession + live builder, haptics, live UI
+GymNetoWatchWidgets/ watch face complications
+GymNeto/             iOS app - start on watch, live mirror, iPhone-only mode, history, charts, settings
+GymNetoWidgets/      iOS Live Activity (lock screen + Dynamic Island)
 project.yml        XcodeGen spec
 ```
 
@@ -65,7 +85,7 @@ xcodegen generate
 open GymNeto.xcodeproj
 ```
 
-Set your Development Team on both targets, then run the `GymNeto` scheme on your iPhone (the watch app installs with it).
+Set your Development Team on all 4 targets (and register the App Group `group.com.gymneto.app` for the watch app + watch widget), then run the `GymNeto` scheme on your iPhone (the watch app installs with it).
 
 Run the engine tests:
 
@@ -75,7 +95,7 @@ cd GymNetoKit && swift test
 
 ## Settings
 
-- **Count short breaks as rest** + **rest limit** - turn it off if every second off the bar should count as garbage
+- **Rest mode** + **rest limit** - see the table above
 - **Rest timer** - length of the Rest button timer
 - **Nudge after** - when the watch taps you
 - **Strictness** - how much effort is needed to count as work

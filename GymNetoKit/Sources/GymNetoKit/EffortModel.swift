@@ -36,6 +36,14 @@ public struct EffortModel: Sendable {
             return Weights(motion: 0.20, rotation: 0.05, heartLevel: 0.35, heartTrend: 0.05, energy: 0.15, cadence: 0.20)
         case .running:
             return Weights(motion: 0.15, rotation: 0.05, heartLevel: 0.25, heartTrend: 0.05, energy: 0.15, cadence: 0.35)
+        case .cycling:
+            // Wrist barely moves and there are no steps: heart + energy do the work.
+            return Weights(motion: 0.10, rotation: 0.05, heartLevel: 0.45, heartTrend: 0.10, energy: 0.30, cadence: 0)
+        case .rowing:
+            return Weights(motion: 0.30, rotation: 0.15, heartLevel: 0.30, heartTrend: 0.05, energy: 0.20, cadence: 0)
+        case .boxing:
+            // Punches = big wrist acceleration and rotation.
+            return Weights(motion: 0.40, rotation: 0.25, heartLevel: 0.10, heartTrend: 0.10, energy: 0.10, cadence: 0.05)
         }
     }
 
@@ -62,7 +70,7 @@ public struct EffortModel: Sendable {
         if let e = sample.energyRate {
             parts.append((ramp(e, from: 3, to: 11), w.energy))
         }
-        if let c = sample.cadence {
+        if let c = sample.cadence, w.cadence > 0 {
             let start = kind.isSteadyState ? 60.0 : 90.0
             parts.append((ramp(c, from: start, to: 150), w.cadence))
         }
@@ -76,7 +84,7 @@ public struct EffortModel: Sendable {
             score = max(score, ramp(a, from: 0.08, to: 0.30))
         }
         // Clear running cadence alone is enough for steady-state workouts.
-        if let c = sample.cadence, kind.isSteadyState {
+        if let c = sample.cadence, kind == .running || kind == .cardio {
             score = max(score, ramp(c, from: 120, to: 160))
         }
         return min(1, max(0, score))

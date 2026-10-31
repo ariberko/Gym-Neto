@@ -78,7 +78,12 @@ public final class NetTimeEngine {
         plannedRestRemaining = duration ?? profile.plannedRestDuration
         plannedRestExpired = false
         offWorkStreak = 0
-        if state != .rest { transition(to: .rest, reason: nil) }
+        // Leave "work" right away so the next set is detected with the normal enter rules.
+        if profile.restMode == .allGarbage {
+            if state != .garbage { transition(to: .garbage, reason: .longRest) }
+        } else if state != .rest {
+            transition(to: .rest, reason: nil)
+        }
     }
 
     public func cancelPlannedRest() {
@@ -158,6 +163,7 @@ public final class NetTimeEngine {
                     plannedRestRemaining = nil
                     plannedRestExpired = true
                     events.append(.plannedRestFinished)
+                    if profile.nudgeAfter > 0 { nextNudgeAt = elapsed + dt + profile.nudgeAfter }
                 } else {
                     plannedRestRemaining = remaining
                 }
@@ -174,11 +180,17 @@ public final class NetTimeEngine {
         } else {
             offWorkStreak += dt
             if inPlannedRest {
-                newState = .rest
+                if profile.restMode == .allGarbage {
+                    // The timer still paces you, but the user asked for every break to count as garbage.
+                    newState = .garbage
+                    newReason = garbageReason(for: sample, fallback: .longRest)
+                } else {
+                    newState = .rest
+                }
             } else if plannedRestExpired {
                 newState = .garbage
                 newReason = garbageReason(for: sample, fallback: .restOverrun)
-            } else if profile.autoRestEnabled && offWorkStreak <= profile.restAllowance {
+            } else if profile.restMode == .allowance && offWorkStreak <= profile.restAllowance {
                 newState = .rest
             } else {
                 newState = .garbage
@@ -212,7 +224,8 @@ public final class NetTimeEngine {
 
         // Nudges: first after `nudgeAfter`, then every minute.
         if newState == .garbage, let at = nextNudgeAt, now >= at {
-            events.append(.garbageNudge)
+            // No nudges while the user's own rest timer is running.
+            if !inPlannedRest { events.append(.garbageNudge) }
             nextNudgeAt = at + 60
         }
 

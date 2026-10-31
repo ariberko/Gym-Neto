@@ -25,6 +25,7 @@ targets:
     dependencies:
       - package: GymNetoKit
       - target: GymNetoWatch
+      - target: GymNetoWidgets
       - sdk: HealthKit.framework
     entitlements:
       path: GymNeto/GymNeto.entitlements
@@ -35,6 +36,7 @@ targets:
       path: GymNeto/Info.plist
       properties:
         CFBundleDisplayName: Gym Neto
+        NSSupportsLiveActivities: true
         UILaunchScreen: {}
         UISupportedInterfaceOrientations: [UIInterfaceOrientationPortrait]
         NSHealthShareUsageDescription: Gym Neto reads heart rate, energy and your resting heart rate to tell real work from rest.
@@ -53,12 +55,14 @@ targets:
       - Shared
     dependencies:
       - package: GymNetoKit
+      - target: GymNetoWatchWidgets
       - sdk: HealthKit.framework
     entitlements:
       path: GymNetoWatch/GymNetoWatch.entitlements
       properties:
         com.apple.developer.healthkit: true
         com.apple.developer.healthkit.access: []
+        com.apple.security.application-groups: [group.com.gymneto.app]
     info:
       path: GymNetoWatch/Info.plist
       properties:
@@ -74,9 +78,57 @@ targets:
         PRODUCT_BUNDLE_IDENTIFIER: com.gymneto.app.watchkitapp
         ASSETCATALOG_COMPILER_APPICON_NAME: ""
 
+  # Live Activity (lock screen + Dynamic Island)
+  GymNetoWidgets:
+    type: app-extension
+    platform: iOS
+    sources:
+      - GymNetoWidgets
+      - Shared/Theme.swift
+      - Shared/GlanceViews.swift
+      - Shared/NetActivityAttributes.swift
+    dependencies:
+      - package: GymNetoKit
+    info:
+      path: GymNetoWidgets/Info.plist
+      properties:
+        CFBundleDisplayName: Gym Neto
+        NSExtension:
+          NSExtensionPointIdentifier: com.apple.widgetkit-extension
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.gymneto.app.widgets
+
+  # Watch face complications
+  GymNetoWatchWidgets:
+    type: app-extension
+    platform: watchOS
+    sources:
+      - GymNetoWatchWidgets
+      - Shared/Theme.swift
+      - Shared/GlanceViews.swift
+      - Shared/GlanceStore.swift
+    dependencies:
+      - package: GymNetoKit
+    entitlements:
+      path: GymNetoWatchWidgets/GymNetoWatchWidgets.entitlements
+      properties:
+        com.apple.security.application-groups: [group.com.gymneto.app]
+    info:
+      path: GymNetoWatchWidgets/Info.plist
+      properties:
+        CFBundleDisplayName: Gym Neto
+        NSExtension:
+          NSExtensionPointIdentifier: com.apple.widgetkit-extension
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.gymneto.app.watchkitapp.widgets
+
 schemes:
   GymNeto:
     build:
       targets:
         GymNeto: all
         GymNetoWatch: all
+        GymNetoWidgets: all
+        GymNetoWatchWidgets: all

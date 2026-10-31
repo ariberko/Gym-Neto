@@ -30,6 +30,10 @@ final class WorkoutManager: NSObject, ObservableObject {
     private var energyTotal: Double = 0
     private var energyHistory: [(date: Date, kcal: Double)] = []
 
+    // Watch face widget bookkeeping.
+    private var glanceKey: String?
+    private var lastWidgetReload = Date.distantPast
+
     // MARK: Authorization
 
     func requestAuthorization() async {
@@ -97,6 +101,8 @@ final class WorkoutManager: NSObject, ObservableObject {
             startTimer()
             phase = .running
             snapshot = engine?.snapshot()
+            glanceKey = nil
+            updateGlance(force: true)
             WKInterfaceDevice.current().play(.start)
         } catch {
             print("Could not start workout: \(error)")
@@ -130,6 +136,7 @@ final class WorkoutManager: NSObject, ObservableObject {
         self.record = record
         phase = .summary
         PhoneConnector.shared.send(.finished(record), reliable: true)
+        GlanceStore.save(GlanceStore.load().finishing(record), reloadWidgets: true)
 
         session?.end()
         guard let builder else { return }
@@ -187,6 +194,7 @@ final class WorkoutManager: NSObject, ObservableObject {
         let events = engine.ingest(sample)
         snapshot = engine.snapshot()
         handle(events)
+        updateGlance(force: false)
 
         tick += 1
         if tick % 2 == 0, let snap = snapshot {
@@ -203,6 +211,20 @@ final class WorkoutManager: NSObject, ObservableObject {
             case .startedWork, .startedRest, .startedGarbage: break
             }
         }
+    }
+
+    /// Keeps the watch face complication in sync. Widget reloads have a budget,
+    /// so we only reload when the state changes (at most every 10 s) or every 5 minutes.
+    private func updateGlance(force: Bool) {
+        guard let snap = snapshot else { return }
+        let key = "\(snap.state.rawValue)-\(snap.reason?.rawValue ?? "")-\(snap.isPaused)-\(snap.plannedRestRemaining != nil)"
+        let now = Date()
+        let changed = key != glanceKey
+        let sinceReload = now.timeIntervalSince(lastWidgetReload)
+        guard force || (changed && sinceReload >= 10) || sinceReload >= 300 else { return }
+        glanceKey = key
+        lastWidgetReload = now
+        GlanceStore.save(GlanceStore.load().merging(live: snap, at: now), reloadWidgets: true)
     }
 
     /// kcal per minute over the last ~30 s.

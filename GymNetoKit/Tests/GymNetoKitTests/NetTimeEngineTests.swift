@@ -31,6 +31,7 @@ final class NetTimeEngineTests: XCTestCase {
 
     func testShortBreakIsRestAndLongBreakIsGarbage() {
         var profile = UserProfile.default
+        profile.restMode = .allowance
         profile.restAllowance = 60
         let engine = NetTimeEngine(kind: .strength, profile: profile, startDate: start)
         _ = run(engine, from: 0, to: 30) { lifting($0) }
@@ -47,10 +48,9 @@ final class NetTimeEngineTests: XCTestCase {
         XCTAssertEqual(engine.totals.total, 150, accuracy: 0.001)
     }
 
-    func testAutoRestOffMakesEveryBreakGarbage() {
-        var profile = UserProfile.default
-        profile.autoRestEnabled = false
-        let engine = NetTimeEngine(kind: .strength, profile: profile, startDate: start)
+    func testDefaultModeMakesEveryBreakGarbage() {
+        XCTAssertEqual(UserProfile.default.restMode, .allGarbage)
+        let engine = NetTimeEngine(kind: .strength, profile: .default, startDate: start)
         _ = run(engine, from: 0, to: 20) { lifting($0) }
         _ = run(engine, from: 20, to: 60) { sitting($0) }
         XCTAssertEqual(engine.totals.rest, 0)
@@ -58,7 +58,9 @@ final class NetTimeEngineTests: XCTestCase {
     }
 
     func testPlannedRestThenOverrun() {
-        let engine = NetTimeEngine(kind: .strength, profile: .default, startDate: start)
+        var profile = UserProfile.default
+        profile.restMode = .timerOnly
+        let engine = NetTimeEngine(kind: .strength, profile: profile, startDate: start)
         _ = run(engine, from: 0, to: 20) { lifting($0) }
         engine.startPlannedRest(duration: 30)
         let events = run(engine, from: 20, to: 80) { sitting($0) }
@@ -70,6 +72,7 @@ final class NetTimeEngineTests: XCTestCase {
 
     func testScreenPostureIsTaggedAsScreenTime() {
         var profile = UserProfile.default
+        profile.restMode = .allowance
         profile.restAllowance = 10
         let engine = NetTimeEngine(kind: .strength, profile: profile, startDate: start)
         _ = run(engine, from: 0, to: 20) { lifting($0) }
@@ -84,6 +87,46 @@ final class NetTimeEngineTests: XCTestCase {
         let engine = NetTimeEngine(kind: .strength, profile: profile, startDate: start)
         _ = run(engine, from: 0, to: 60) { sitting($0, hr: 90, cadence: 80) }
         XCTAssertEqual(engine.reason, .wandering)
+    }
+
+    func testTimerOnlyModeBreakWithoutTimerIsGarbage() {
+        var profile = UserProfile.default
+        profile.restMode = .timerOnly
+        let engine = NetTimeEngine(kind: .strength, profile: profile, startDate: start)
+        _ = run(engine, from: 0, to: 20) { lifting($0) }
+        _ = run(engine, from: 20, to: 60) { sitting($0) }
+        XCTAssertEqual(engine.totals.rest, 0)
+        XCTAssertEqual(engine.state, .garbage)
+    }
+
+    func testAllGarbageModeTimerIsGarbageButNoNudge() {
+        var profile = UserProfile.default
+        profile.nudgeAfter = 10
+        let engine = NetTimeEngine(kind: .strength, profile: profile, startDate: start)
+        _ = run(engine, from: 0, to: 20) { lifting($0) }
+        engine.startPlannedRest(duration: 40)
+        let during = run(engine, from: 20, to: 59) { sitting($0) }
+        XCTAssertFalse(during.contains(.garbageNudge))
+        XCTAssertEqual(engine.totals.rest, 0)
+        XCTAssertEqual(engine.totals.garbage, 39, accuracy: 0.001)
+
+        let after = run(engine, from: 59, to: 80) { sitting($0) }
+        XCTAssertTrue(after.contains(.plannedRestFinished))
+        XCTAssertTrue(after.contains(.garbageNudge))
+        XCTAssertEqual(engine.reason, .restOverrun)
+    }
+
+    func testGlanceCountsUpOnlyWhileWorking() throws {
+        let engine = NetTimeEngine(kind: .boxing, profile: .default, startDate: start)
+        _ = run(engine, from: 0, to: 30) { lifting($0) }
+        let now = start.addingTimeInterval(30)
+        let glance = NetGlance(snapshot: engine.snapshot(), at: now)
+        XCTAssertTrue(glance.isLive)
+        let workStart = try XCTUnwrap(glance.liveWorkStart)
+        XCTAssertEqual(now.timeIntervalSince(workStart), engine.totals.work, accuracy: 0.001)
+
+        _ = run(engine, from: 30, to: 60) { sitting($0) }
+        XCTAssertNil(NetGlance(snapshot: engine.snapshot(), at: now).liveWorkStart)
     }
 
     func testRunningCadenceIsWorkEvenWithoutHeartRate() {

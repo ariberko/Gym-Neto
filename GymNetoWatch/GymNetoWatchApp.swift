@@ -84,10 +84,16 @@ struct WatchSettingsView: View {
     var body: some View {
         let p = manager.profile
         List {
-            Toggle("Auto rest", isOn: Binding(get: { p.autoRestEnabled }, set: { var n = p; n.autoRestEnabled = $0; manager.updateProfile(n) }))
-            Stepper("Rest limit \(Format.clock(p.restAllowance))",
+            Picker("Rest mode", selection: Binding(get: { p.restMode }, set: { var n = p; n.restMode = $0; manager.updateProfile(n) })) {
+                ForEach(RestMode.allCases) { mode in
+                    Text(mode.title).tag(mode)
+                }
+            }
+            if p.restMode == .allowance {
+                Stepper("Rest limit \(Format.clock(p.restAllowance))",
                     value: Binding(get: { p.restAllowance }, set: { var n = p; n.restAllowance = $0; manager.updateProfile(n) }),
                     in: 30...300, step: 15)
+            }
             Stepper("Rest timer \(Format.clock(p.plannedRestDuration))",
                     value: Binding(get: { p.plannedRestDuration }, set: { var n = p; n.plannedRestDuration = $0; manager.updateProfile(n) }),
                     in: 15...300, step: 15)

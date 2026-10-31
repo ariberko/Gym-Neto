@@ -85,6 +85,7 @@ final class PhoneWorkoutTracker: ObservableObject {
         guard let engine else { return nil }
         let record = engine.finish(at: Date(), source: .phone)
         saveToHealth(record)
+        LiveActivityController.shared.end(with: record)
         return record
     }
 
@@ -99,6 +100,7 @@ final class PhoneWorkoutTracker: ObservableObject {
                                   rotationRMS: m.rotationRMS, cadence: m.cadence, posture: m.posture)
         let events = engine.ingest(sample)
         snapshot = engine.snapshot()
+        if let snapshot { LiveActivityController.shared.update(with: snapshot, source: .phone) }
         for e in events {
             if e == .garbageNudge { haptics.notificationOccurred(.warning) }
             if e == .plannedRestFinished { haptics.notificationOccurred(.success) }

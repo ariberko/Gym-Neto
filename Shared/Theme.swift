@@ -35,6 +35,9 @@ extension WorkoutKind {
         case .hiit: return .highIntensityIntervalTraining
         case .cardio: return .mixedCardio
         case .running: return .running
+        case .cycling: return .cycling
+        case .rowing: return .rowing
+        case .boxing: return .boxing
         }
     }
 
@@ -42,7 +45,10 @@ extension WorkoutKind {
         switch activityType {
         case .functionalStrengthTraining, .crossTraining: self = .functional
         case .highIntensityIntervalTraining: self = .hiit
-        case .mixedCardio, .elliptical, .cycling, .rowing, .stairClimbing: self = .cardio
+        case .mixedCardio, .elliptical, .stairClimbing, .stairs: self = .cardio
+        case .cycling, .handCycling: self = .cycling
+        case .rowing, .paddleSports: self = .rowing
+        case .boxing, .kickboxing, .martialArts: self = .boxing
         case .running, .walking: self = .running
         default: self = .strength
         }

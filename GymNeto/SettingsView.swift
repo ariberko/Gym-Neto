@@ -9,8 +9,12 @@ struct SettingsView: View {
         NavigationStack {
             Form {
                 Section {
-                    Toggle("Count short breaks as rest", isOn: bind(\.autoRestEnabled))
-                    if model.profile.autoRestEnabled {
+                    Picker("Rest mode", selection: bind(\.restMode)) {
+                        ForEach(RestMode.allCases) { mode in
+                            Text(mode.title).tag(mode)
+                        }
+                    }
+                    if model.profile.restMode == .allowance {
                         Stepper("Rest limit: \(Format.clock(model.profile.restAllowance))",
                                 value: bind(\.restAllowance), in: 30...300, step: 15)
                     }
@@ -19,7 +23,7 @@ struct SettingsView: View {
                 } header: {
                     Text("Rest")
                 } footer: {
-                    Text("A break shorter than the rest limit is healthy rest. Anything longer becomes garbage time. Turn it off if every second off the bar should count as garbage.")
+                    Text(model.profile.restMode.detail + " The Rest button starts a timer and the watch taps you when it ends.")
                 }
 
                 Section {

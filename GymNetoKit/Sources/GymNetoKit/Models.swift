@@ -33,7 +33,7 @@ public enum GarbageReason: String, Codable, Sendable, CaseIterable {
 
     public var title: String {
         switch self {
-        case .longRest: return "Long rests"
+        case .longRest: return "Resting"
         case .restOverrun: return "Rest timer overrun"
         case .onPhone: return "Screen time"
         case .wandering: return "Wandering around"
@@ -67,6 +67,9 @@ public enum WorkoutKind: String, Codable, Sendable, CaseIterable, Identifiable {
     case hiit
     case cardio
     case running
+    case cycling
+    case rowing
+    case boxing
 
     public var id: String { rawValue }
 
@@ -77,6 +80,9 @@ public enum WorkoutKind: String, Codable, Sendable, CaseIterable, Identifiable {
         case .hiit: return "HIIT"
         case .cardio: return "Cardio"
         case .running: return "Running"
+        case .cycling: return "Cycling"
+        case .rowing: return "Rowing"
+        case .boxing: return "Boxing"
         }
     }
 
@@ -87,12 +93,18 @@ public enum WorkoutKind: String, Codable, Sendable, CaseIterable, Identifiable {
         case .hiit: return "bolt.heart.fill"
         case .cardio: return "figure.elliptical"
         case .running: return "figure.run"
+        case .cycling: return "figure.indoor.cycle"
+        case .rowing: return "figure.rower"
+        case .boxing: return "figure.boxing"
         }
     }
 
-    /// Steady-state workouts (running, cardio) rely more on heart rate and cadence than on bursts of motion.
+    /// Steady-state workouts rely more on heart rate and energy than on bursts of motion.
     public var isSteadyState: Bool {
-        self == .cardio || self == .running
+        switch self {
+        case .cardio, .running, .cycling, .rowing: return true
+        case .strength, .functional, .hiit, .boxing: return false
+        }
     }
 }
 
@@ -137,14 +149,42 @@ public struct SensorSample: Codable, Sendable, Equatable {
 
 // MARK: - User profile / settings
 
+/// How time off the bar is counted. The user picks one in Settings.
+public enum RestMode: String, Codable, Sendable, CaseIterable, Identifiable {
+    /// Every second you are not working is garbage (the strictest - default).
+    case allGarbage
+    /// Breaks shorter than the rest limit are healthy rest, longer ones turn into garbage.
+    case allowance
+    /// Rest only counts while the Rest timer is running.
+    case timerOnly
+
+    public var id: String { rawValue }
+
+    public var title: String {
+        switch self {
+        case .allGarbage: return "All rest is garbage"
+        case .allowance: return "Short rest is OK"
+        case .timerOnly: return "Rest only with timer"
+        }
+    }
+
+    public var detail: String {
+        switch self {
+        case .allGarbage: return "Only real work counts. Every break is garbage time."
+        case .allowance: return "Breaks under your rest limit are rest. Longer breaks are garbage."
+        case .timerOnly: return "Rest counts only while the Rest timer runs. Everything else is garbage."
+        }
+    }
+}
+
 public struct UserProfile: Codable, Sendable, Equatable {
     /// Resting heart rate (auto-filled from Apple Health when available).
     public var restingHeartRate: Double
     /// Max heart rate (auto-filled from date of birth when available: 208 - 0.7 * age).
     public var maxHeartRate: Double
-    /// When true, short breaks between sets count as Rest instead of Garbage.
-    public var autoRestEnabled: Bool
-    /// How long a single break can last before it turns into Garbage time.
+    /// How breaks are counted.
+    public var restMode: RestMode
+    /// With `.allowance`: how long a single break can last before it turns into Garbage time.
     public var restAllowance: TimeInterval
     /// Default length of the manual rest timer.
     public var plannedRestDuration: TimeInterval
@@ -155,14 +195,14 @@ public struct UserProfile: Codable, Sendable, Equatable {
 
     public init(restingHeartRate: Double = 62,
                 maxHeartRate: Double = 188,
-                autoRestEnabled: Bool = true,
+                restMode: RestMode = .allGarbage,
                 restAllowance: TimeInterval = 90,
                 plannedRestDuration: TimeInterval = 90,
                 nudgeAfter: TimeInterval = 30,
                 strictness: Double = 0.5) {
         self.restingHeartRate = restingHeartRate
         self.maxHeartRate = maxHeartRate
-        self.autoRestEnabled = autoRestEnabled
+        self.restMode = restMode
         self.restAllowance = restAllowance
         self.plannedRestDuration = plannedRestDuration
         self.nudgeAfter = nudgeAfter

@@ -117,12 +117,15 @@ final class AppModel: NSObject, ObservableObject {
         switch message {
         case .live(let snap):
             watchLive = snap
+            LiveActivityController.shared.update(with: snap, source: .watch)
         case .finished(let record):
             watchLive = nil
             add(record)
             justFinished = record
+            LiveActivityController.shared.end(with: record)
         case .ended:
             watchLive = nil
+            LiveActivityController.shared.end(with: nil)
         case .profile:
             break
         }

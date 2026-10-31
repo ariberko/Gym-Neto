@@ -43,7 +43,7 @@ public enum InsightBuilder {
 
         // 3. Average break length.
         let breaks = mergedBreaks(record.segments)
-        if breaks.count >= 2 {
+        if breaks.count >= 2 && profile.restMode == .allowance {
             let avg = breaks.reduce(0, +) / Double(breaks.count)
             let tone: Insight.Tone = avg <= profile.restAllowance ? .good : .warning
             out.append(Insight(symbol: "pause.circle.fill", title: "Average break \(Format.clock(avg))",
@@ -51,6 +51,13 @@ public enum InsightBuilder {
                                 ? "Right on your \(Format.clock(profile.restAllowance)) target."
                                 : "That is \(Format.clock(avg - profile.restAllowance)) over your target.",
                                tone: tone))
+        }
+
+        if breaks.count >= 2 && profile.restMode != .allowance {
+            let avg = breaks.reduce(0, +) / Double(breaks.count)
+            out.append(Insight(symbol: "pause.circle.fill", title: "Average break \(Format.clock(avg))",
+                               detail: "Every break counts as garbage in your rest mode. Shorter breaks = higher score.",
+                               tone: avg <= 60 ? .good : .info))
         }
 
         // 4. Compare to recent workouts of the same kind.
