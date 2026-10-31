@@ -1,0 +1,31 @@
+name: CI
+
+# Repo is public, so Actions minutes are free.
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  core-tests:
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Test GymNetoKit (net-time engine)
+        working-directory: GymNetoKit
+        run: swift test
+
+  build-apps:
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install XcodeGen
+        run: brew install xcodegen
+      - name: Generate project
+        run: xcodegen generate
+      - name: Build iOS + watchOS (simulator, no signing)
+        run: |
+          xcodebuild -project GymNeto.xcodeproj -scheme GymNeto \
+            -destination 'generic/platform=iOS Simulator' \
+            CODE_SIGNING_ALLOWED=NO build 2>&1 | grep -E "error:|warning: .*GymNeto|BUILD (SUCCEEDED|FAILED)" | grep -v "^ld:" | head -n 80
+          exit ${PIPESTATUS[0]}

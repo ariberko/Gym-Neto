@@ -1,0 +1,77 @@
+name: Screenshots
+
+# Runs the real app in the iOS + watchOS simulators in demo mode and saves screenshots
+# to the `screenshots` branch (and as a downloadable artifact).
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  screenshots:
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+      - run: brew install xcodegen && xcodegen generate
+      - name: Pick simulators
+        run: |
+          python3 - <<'PY' >> "$GITHUB_ENV"
+          import json, subprocess
+          data = json.loads(subprocess.check_output(["xcrun", "simctl", "list", "devices", "available", "-j"]))
+          def pick(prefix, prefer):
+              devs = [d for rt, ds in data["devices"].items() if prefix in rt for d in ds]
+              for p in prefer:
+                  for d in devs:
+                      if d["name"].startswith(p):
+                          return d["udid"]
+              return devs[0]["udid"] if devs else ""
+          print("PHONE=" + pick("iOS", ["iPhone 16 Pro", "iPhone 16", "iPhone 15 Pro", "iPhone"]))
+          print("WATCH=" + pick("watchOS", ["Apple Watch Series 10 (46mm)", "Apple Watch Series 10", "Apple Watch Ultra", "Apple Watch"]))
+          PY
+          cat "$GITHUB_ENV"
+      - name: Build iPhone app
+        run: |
+          set -o pipefail
+          xcodebuild -project GymNeto.xcodeproj -scheme GymNeto -destination "id=$PHONE" \
+            -derivedDataPath build CODE_SIGNING_ALLOWED=NO build 2>&1 | grep -E "error:|BUILD (SUCCEEDED|FAILED)"
+      - name: iPhone screenshots
+        run: |
+          mkdir -p shots
+          xcrun simctl boot "$PHONE" || true
+          xcrun simctl bootstatus "$PHONE" -b
+          xcrun simctl status_bar "$PHONE" override --time "9:41" --batteryState charged --batteryLevel 100 --cellularBars 4 --wifiBars 3 || true
+          xcrun simctl ui "$PHONE" appearance dark || true
+          xcrun simctl install "$PHONE" build/Build/Products/Debug-iphonesimulator/GymNeto.app
+          for s in home live summary settings; do
+            xcrun simctl launch --terminate-running-process "$PHONE" com.gymneto.app -demo -screen "$s"
+            sleep 8
+            xcrun simctl io "$PHONE" screenshot "shots/iphone-$s.png"
+          done
+      - name: Watch screenshots
+        continue-on-error: true
+        run: |
+          set -o pipefail
+          xcodebuild -project GymNeto.xcodeproj -scheme GymNetoWatch -destination "id=$WATCH" \
+            -derivedDataPath build CODE_SIGNING_ALLOWED=NO build 2>&1 | grep -E "error:|BUILD (SUCCEEDED|FAILED)"
+          xcrun simctl boot "$WATCH" || true
+          xcrun simctl bootstatus "$WATCH" -b
+          xcrun simctl install "$WATCH" build/Build/Products/Debug-watchsimulator/GymNetoWatch.app
+          for s in start live summary; do
+            xcrun simctl launch --terminate-running-process "$WATCH" com.gymneto.app.watchkitapp -demo -screen "$s"
+            sleep 8
+            xcrun simctl io "$WATCH" screenshot "shots/watch-$s.png"
+          done
+      - uses: actions/upload-artifact@v4
+        with:
+          name: screenshots
+          path: shots
+      - name: Save to screenshots branch
+        run: |
+          cd shots
+          git init -q -b screenshots
+          git config user.name "github-actions"
+          git config user.email "github-actions@users.noreply.github.com"
+          git add .
+          git commit -qm "App screenshots from ${GITHUB_SHA::7}"
+          git push -f "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git" screenshots
