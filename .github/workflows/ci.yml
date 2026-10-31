@@ -25,5 +25,5 @@ jobs:
         run: |
           xcodebuild -project GymNeto.xcodeproj -scheme GymNeto \
             -destination 'generic/platform=iOS Simulator' \
-            CODE_SIGNING_ALLOWED=NO build | tail -n 50
+            CODE_SIGNING_ALLOWED=NO build 2>&1 | grep -E "error:|warning: .*GymNeto|BUILD (SUCCEEDED|FAILED)" | grep -v "^ld:" | head -n 80
           exit ${PIPESTATUS[0]}
