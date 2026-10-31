@@ -12,6 +12,18 @@ Gym Neto is an Apple Watch + iPhone app. You press start when you start training
 
 You see it live on the watch and phone and get a full report at the end: net time, score (A+ to F), timeline, heart rate chart, where the garbage time went and coaching tips.
 
+## Screenshots
+
+| Home | Live | Summary |
+|---|---|---|
+| <img src="docs/screenshots/iphone-home.png" width="250"> | <img src="docs/screenshots/iphone-live.png" width="250"> | <img src="docs/screenshots/iphone-summary.png" width="250"> |
+
+| Watch: start | Watch: live | Watch: summary |
+|---|---|---|
+| <img src="docs/screenshots/watch-start.png" width="180"> | <img src="docs/screenshots/watch-live.png" width="180"> | <img src="docs/screenshots/watch-summary.png" width="180"> |
+
+Made from the real app in the simulators with demo data (Actions -> Screenshots).
+
 ## How it knows you are working
 
 Every second the app fuses these signals into one **effort score** (0-100):
