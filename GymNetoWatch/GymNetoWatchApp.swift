@@ -13,6 +13,10 @@ struct GymNetoWatchApp: App {
             WatchRootView()
                 .environmentObject(manager)
                 .task {
+                    if DemoData.isEnabled {
+                        manager.loadDemo()
+                        return
+                    }
                     PhoneConnector.shared.onProfile = { manager.updateProfile($0) }
                     PhoneConnector.shared.activate()
                     await manager.requestAuthorization()

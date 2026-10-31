@@ -132,3 +132,8 @@ schemes:
         GymNetoWatch: all
         GymNetoWidgets: all
         GymNetoWatchWidgets: all
+  GymNetoWatch:
+    build:
+      targets:
+        GymNetoWatch: all
+        GymNetoWatchWidgets: all

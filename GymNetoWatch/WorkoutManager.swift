@@ -148,6 +148,17 @@ final class WorkoutManager: NSObject, ObservableObject {
         WKInterfaceDevice.current().play(.stop)
     }
 
+    func loadDemo() {
+        profile = DemoData.profile
+        snapshot = DemoData.liveSnapshot
+        record = DemoData.history.first
+        switch DemoData.screen {
+        case "live": phase = .running
+        case "summary": phase = .summary
+        default: phase = .idle
+        }
+    }
+
     func reset() {
         session = nil
         builder = nil

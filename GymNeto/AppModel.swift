@@ -63,6 +63,14 @@ final class AppModel: NSObject, ObservableObject {
             && WCSession.default.isPaired && WCSession.default.isWatchAppInstalled
     }
 
+    // MARK: Demo
+
+    func loadDemo() {
+        profile = DemoData.profile
+        history = DemoData.history
+        watchLive = DemoData.liveSnapshot
+    }
+
     // MARK: Settings
 
     func updateProfile(_ p: UserProfile) {
