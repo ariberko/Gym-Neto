@@ -18,9 +18,23 @@ final class AppModel: NSObject, ObservableObject {
     private let fileURL: URL = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
         .appendingPathComponent("workouts.json")
 
+    /// When the last live message from the watch arrived.
+    private var liveReceivedAt = Date.distantPast
+    private var staleTimer: Timer?
+
     override init() {
         super.init()
         loadHistory()
+        // If the watch goes quiet (battery died, out of range) hide the live card after a minute.
+        let timer = Timer(timeInterval: 15, repeats: true) { [weak self] _ in
+            Task { @MainActor in
+                guard let self, self.watchLive != nil,
+                      Date().timeIntervalSince(self.liveReceivedAt) > 60 else { return }
+                self.watchLive = nil
+            }
+        }
+        RunLoop.main.add(timer, forMode: .common)
+        staleTimer = timer
         if WCSession.isSupported() {
             WCSession.default.delegate = self
             WCSession.default.activate()
@@ -69,6 +83,7 @@ final class AppModel: NSObject, ObservableObject {
         profile = DemoData.profile
         history = DemoData.history
         watchLive = DemoData.liveSnapshot
+        liveReceivedAt = .distantFuture
     }
 
     // MARK: Settings
@@ -125,6 +140,7 @@ final class AppModel: NSObject, ObservableObject {
         switch message {
         case .live(let snap):
             watchLive = snap
+            liveReceivedAt = Date()
             LiveActivityController.shared.update(with: snap, source: .watch)
         case .finished(let record):
             watchLive = nil
