@@ -65,8 +65,10 @@ struct SummaryView: View {
                     }
                 }
             }
+            Spacer(minLength: 0)
         }
         .padding()
+        .frame(maxWidth: .infinity)
         .background(Theme.card, in: RoundedRectangle(cornerRadius: 16))
     }
 
@@ -80,6 +82,7 @@ struct SummaryView: View {
                     .foregroundStyle(s.state.color)
             }
             .chartYAxis(.hidden)
+            .chartXScale(domain: 0...max(1, record.totals.total / 60))
             .chartXAxisLabel("minutes")
             .frame(height: 60)
         }
@@ -89,23 +92,34 @@ struct SummaryView: View {
 
     private var heartChart: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text("HEART RATE & EFFORT").font(.caption.bold()).foregroundStyle(.secondary)
+            Text("HEART RATE").font(.caption.bold()).foregroundStyle(.secondary)
             Chart {
+                // Colored bands behind the line show what you were doing.
+                ForEach(record.segments) { s in
+                    RectangleMark(xStart: .value("Start", s.start / 60), xEnd: .value("End", s.end / 60))
+                        .foregroundStyle(s.state.color.opacity(0.18))
+                }
                 ForEach(record.points) { p in
                     if let hr = p.heartRate {
                         LineMark(x: .value("Min", p.offset / 60), y: .value("BPM", hr))
-                            .foregroundStyle(.red)
-                            .interpolationMethod(.catmullRom)
+                            .foregroundStyle(.white)
+                            .lineStyle(StrokeStyle(lineWidth: 2))
+                            .interpolationMethod(.monotone)
                     }
-                }
-                ForEach(record.points) { p in
-                    PointMark(x: .value("Min", p.offset / 60), y: .value("BPM", 60 + p.effort * 40))
-                        .foregroundStyle(p.state.color)
-                        .symbolSize(12)
                 }
             }
             .chartYScale(domain: .automatic(includesZero: false))
+            .chartXScale(domain: 0...max(1, record.totals.total / 60))
+            .chartXAxisLabel("minutes")
+            .chartYAxisLabel("bpm")
             .frame(height: 180)
+            HStack(spacing: 14) {
+                ForEach(ActivityState.allCases, id: \.self) { state in
+                    Label(state.title, systemImage: "square.fill")
+                        .font(.caption2)
+                        .foregroundStyle(state.color)
+                }
+            }
         }
         .padding()
         .background(Theme.card, in: RoundedRectangle(cornerRadius: 16))

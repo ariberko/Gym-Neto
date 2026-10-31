@@ -39,14 +39,14 @@ enum DemoData {
                 switch phase {
                 case .work(let n):
                     return (n, { i in
-                        hr = min(168, hr + 0.9)
+                        hr = min(165, hr + 0.6)
                         return SensorSample(timestamp: start.addingTimeInterval(t), heartRate: hr,
                                             accelRMS: 0.2 + 0.06 * sin(Double(i)), rotationRMS: 1.3, cadence: 0, energyRate: 9.5)
                     })
                 case .rest(let n), .phone(let n):
                     let screenUp: Bool = { if case .phone = phase { return true } else { return false } }()
                     return (n, { _ in
-                        hr = max(96, hr - 0.55)
+                        hr = max(104, hr - 0.35)
                         return SensorSample(timestamp: start.addingTimeInterval(t), heartRate: hr,
                                             accelRMS: 0.012, rotationRMS: 0.07, cadence: 0, energyRate: 2.4,
                                             posture: screenUp ? .screenUp : .other)

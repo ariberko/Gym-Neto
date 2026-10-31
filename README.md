@@ -12,6 +12,18 @@ Gym Neto is an Apple Watch + iPhone app. You press start when you start training
 
 You see it live on the watch and phone and get a full report at the end: net time, score (A+ to F), timeline, heart rate chart, where the garbage time went and coaching tips.
 
+## Screenshots
+
+| Home | Live | Summary |
+|---|---|---|
+| <img src="docs/screenshots/iphone-home.png" width="250"> | <img src="docs/screenshots/iphone-live.png" width="250"> | <img src="docs/screenshots/iphone-summary.png" width="250"> |
+
+| Watch: start | Watch: live | Watch: summary |
+|---|---|---|
+| <img src="docs/screenshots/watch-start.png" width="180"> | <img src="docs/screenshots/watch-live.png" width="180"> | <img src="docs/screenshots/watch-summary.png" width="180"> |
+
+Made from the real app in the simulators with demo data (Actions -> Screenshots).
+
 ## How it knows you are working
 
 Every second the app fuses these signals into one **effort score** (0-100):
@@ -75,17 +87,28 @@ GymNetoWidgets/      iOS Live Activity (lock screen + Dynamic Island)
 project.yml        XcodeGen spec
 ```
 
-## Build
+## Put it on your iPhone
 
-Needs a Mac with Xcode 15+.
+**What you need:** a Mac with Xcode 16, an Apple ID and your iPhone (+ Apple Watch for the full app).
 
-```bash
-brew install xcodegen
-xcodegen generate
-open GymNeto.xcodeproj
-```
+1. Install the tools and make the Xcode project:
+   ```bash
+   brew install xcodegen
+   git clone https://github.com/ariberko/Gym-Neto.git && cd Gym-Neto
+   xcodegen generate
+   open GymNeto.xcodeproj
+   ```
+2. In Xcode -> Settings -> Accounts, sign in with your Apple ID.
+3. Bundle IDs must be unique to you. Find and replace every `com.gymneto` with something like `com.yourname.gymneto` in `project.yml` and `Shared/GlanceStore.swift`, then run `xcodegen generate` again.
+4. For each of the 4 targets: Signing & Capabilities -> Team -> pick your team.
+5. Plug in your iPhone, choose it at the top of Xcode and press **Run**. The watch app installs with it.
+6. On the iPhone: Settings -> General -> VPN & Device Management -> trust your Apple ID. Allow Health and Motion when the app asks.
 
-Set your Development Team on all 4 targets (and register the App Group `group.com.gymneto.app` for the watch app + watch widget), then run the `GymNeto` scheme on your iPhone (the watch app installs with it).
+A free Apple ID is fine for testing on your own phone (the app must be re-installed every 7 days). Sharing with friends (TestFlight) or the App Store needs the paid Apple Developer Program.
+
+### Try it without a device
+
+Run in the simulator with demo data: Edit Scheme -> Arguments -> add `-demo -screen home` (or `live`, `summary`, `settings`). The real sensors don't exist in the simulator.
 
 Run the engine tests:
 
