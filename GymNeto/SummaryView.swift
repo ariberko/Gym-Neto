@@ -82,6 +82,7 @@ struct SummaryView: View {
                     .foregroundStyle(s.state.color)
             }
             .chartYAxis(.hidden)
+            .chartXScale(domain: 0...max(1, record.totals.total / 60))
             .chartXAxisLabel("minutes")
             .frame(height: 60)
         }
@@ -108,6 +109,7 @@ struct SummaryView: View {
                 }
             }
             .chartYScale(domain: .automatic(includesZero: false))
+            .chartXScale(domain: 0...max(1, record.totals.total / 60))
             .chartXAxisLabel("minutes")
             .chartYAxisLabel("bpm")
             .frame(height: 180)
