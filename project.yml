@@ -1,0 +1,82 @@
+name: GymNeto
+options:
+  bundleIdPrefix: com.gymneto
+  deploymentTarget:
+    iOS: "17.0"
+    watchOS: "10.0"
+  createIntermediateGroups: true
+settings:
+  base:
+    SWIFT_VERSION: "5.10"
+    MARKETING_VERSION: "1.0"
+    CURRENT_PROJECT_VERSION: "1"
+    DEVELOPMENT_TEAM: ""   # set your team id here or in Xcode
+packages:
+  GymNetoKit:
+    path: GymNetoKit
+
+targets:
+  GymNeto:
+    type: application
+    platform: iOS
+    sources:
+      - GymNeto
+      - Shared
+    dependencies:
+      - package: GymNetoKit
+      - target: GymNetoWatch
+      - sdk: HealthKit.framework
+    entitlements:
+      path: GymNeto/GymNeto.entitlements
+      properties:
+        com.apple.developer.healthkit: true
+        com.apple.developer.healthkit.access: []
+    info:
+      path: GymNeto/Info.plist
+      properties:
+        CFBundleDisplayName: Gym Neto
+        UILaunchScreen: {}
+        UISupportedInterfaceOrientations: [UIInterfaceOrientationPortrait]
+        NSHealthShareUsageDescription: Gym Neto reads heart rate, energy and your resting heart rate to tell real work from rest.
+        NSHealthUpdateUsageDescription: Gym Neto saves your workouts and net-time stats to Apple Health.
+        NSMotionUsageDescription: Gym Neto uses motion and step data to detect when you are training and when you are not.
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.gymneto.app
+        ASSETCATALOG_COMPILER_APPICON_NAME: ""
+
+  GymNetoWatch:
+    type: application
+    platform: watchOS
+    sources:
+      - GymNetoWatch
+      - Shared
+    dependencies:
+      - package: GymNetoKit
+      - sdk: HealthKit.framework
+    entitlements:
+      path: GymNetoWatch/GymNetoWatch.entitlements
+      properties:
+        com.apple.developer.healthkit: true
+        com.apple.developer.healthkit.access: []
+    info:
+      path: GymNetoWatch/Info.plist
+      properties:
+        CFBundleDisplayName: Gym Neto
+        WKApplication: true
+        WKCompanionAppBundleIdentifier: com.gymneto.app
+        WKBackgroundModes: [workout-processing]
+        NSHealthShareUsageDescription: Gym Neto reads heart rate and energy during your workout to measure real work time.
+        NSHealthUpdateUsageDescription: Gym Neto saves your workouts to Apple Health.
+        NSMotionUsageDescription: Gym Neto uses wrist motion to detect reps and rest.
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.gymneto.app.watchkitapp
+        ASSETCATALOG_COMPILER_APPICON_NAME: ""
+
+schemes:
+  GymNeto:
+    build:
+      targets:
+        GymNeto: all
+        GymNetoWatch: all
